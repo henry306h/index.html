@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mando DualShock 2 - Virtual</title>
+<style>
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    user-select: none;
+  }
+
+  html, body {
+    height: 100%; width: 100%;
+    overflow: hidden;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 100%);
+    color: #fff;
+    touch-action: none;
+  }
+
+  .gamepad {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    max-width: 1400px;
+    max-height: 800px;
+    margin: auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* ====== ZONAS DEL MANDO ====== */
+  .zone {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .zone-tl { /* D-pad + L1/L2 */ }
+  .zone-tr { /* Botones △○✕□ + R1/R2 */ }
+  .zone-bl { /* Stick izquierdo */ }
+  .zone-br { /* Stick derecho */ }
+
+  /* ====== D-PAD ====== */
+  .dpad {
+    position: relative;
+    width: 150px;
+    height: 150px;
+  }
+
+  .dpad-btn {
+    position: absolute;
+    background: linear-gradient(145deg, #3a3a5a, #1e1e2e);
+    border: 2px solid #5a5a7a;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a0a0c0;
+    font-size: 1.4rem;
+    font-weight: bold;
+    box-shadow:
+      0 4px 8px rgba(0,0,0,0.6),
+      inset 0 1px 2px rgba(255,255,255,0.1);
+    transition: all 0.08s ease;
+    cursor: pointer;
+  }
+
+  .dpad-btn:active,
+  .dpad-btn.active {
+    background: linear-gradient(145deg, #00dbde, #008cff);
+    color: #fff;
+    box-shadow:
+      0 0 15px rgba(0,219,222,0.8),
+      inset 0 1px 2px rgba(255,255,255,0.3);
+    transform: scale(0.95);
+  }
+
+  .dpad-up    { top: 0;    left: 50px;  width: 50px; height: 50px; }
+  .dpad-down  { bottom: 0; left: 50px;  width: 50px; height: 50px; }
+  .dpad-left  { top: 50px; left: 0;     width: 50px; height: 50px; }
+  .dpad-right { top: 50px; right: 0;    width: 50px; height: 50px; }
+
+  /* ====== BOTONES DE ACCIÓN (△○✕□) ====== */
+  .action-buttons {
+    position: relative;
+    width: 200px;
+    height: 200px;
+  }
+
+  .action-btn {
+    position: absolute;
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: bold;
+    border: 2px solid;
+    box-shadow:
+      0 4px 10px rgba(0,0,0,0.6),
+      inset 0 1px 2px rgba(255,255,255,0.15);
+    transition: all 0.08s ease;
+    cursor: pointer;
+    background: linear-gradient(145deg, #2a2a3a, #1a1a2a);
+  }
+
+  .action-btn:active,
+  .action-btn.active {
+    transform: scale(0.92);
+  }
+
+  /* Triángulo - arriba - verde */
+  .btn-triangle {
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    color: #4ade80;
+    border-color: #4ade80;
+  }
+  .btn-triangle:active, .btn-triangle.active {
+    background: radial-gradient(circle, #4ade80, #166534);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(74,222,128,0.8);
+    transform: translateX(-50%) scale(0.92);
+  }
+
+  /* Círculo - derecha - rojo */
+  .btn-circle {
+    top: 50%; right: 0;
+    transform: translateY(-50%);
+    color: #f87171;
+    border-color: #f87171;
+  }
+  .btn-circle:active, .btn-circle.active {
+    background: radial-gradient(circle, #f87171, #991b1b);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(248,113,113,0.8);
+    transform: translateY(-50%) scale(0.92);
+  }
+
+  /* X - abajo - azul */
+  .btn-cross {
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    color: #60a5fa;
+    border-color: #60a5fa;
+  }
+  .btn-cross:active, .btn-cross.active {
+    background: radial-gradient(circle, #60a5fa, #1e3a8a);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(96,165,250,0.8);
+    transform: translateX(-50%) scale(0.92);
+  }
+
+  /* Cuadrado - izquierda - rosa */
+  .btn-square {
+    top: 50%; left: 0;
+    transform: translateY(-50%);
+    color: #f472b6;
+    border-color: #f472b6;
+  }
+  .btn-square:active, .btn-square.active {
+    background: radial-gradient(circle, #f472b6, #831843);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(244,114,182,0.8);
+    transform: translateY(-50%) scale(0.92);
+  }
+
+  /* ====== JOYSTICKS ====== */
+  .joystick-wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .joystick-container {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .joystick-base {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #2d2d42, #1e1e2e);
+    box-shadow:
+      inset 0 0 20px rgba(0,0,0,0.5),
+      0 10px 30px rgba(0,0,0,0.6);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #3a3a5a;
+  }
+
+  .joystick-base::before {
+    content: '';
+    position: absolute;
+    width: 90%; height: 90%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #3a3a5a, #2a2a3a);
+    box-shadow:
+      inset 0 0 15px rgba(0,0,0,0.7),
+      0 5px 15px rgba(0,0,0,0.4);
+  }
+
+  .joystick-handle {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #4a4a6a, #2a2a4a);
+    box-shadow:
+      0 5px 15px rgba(0,0,0,0.5),
+      inset 0 2px 5px rgba(255,255,255,0.1);
+    position: absolute;
+    z-index: 2;
+    transition: transform 0.05s linear;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #5a5a7a;
+    will-change: transform;
+  }
+
+  .joystick-handle::before {
+    content: '';
+    position: absolute;
+    width: 40%; height: 40%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #6a6a8a, #4a4a6a);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+  }
+
+  .crosshair {
+    position: absolute;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .crosshair-line { position: absolute; background: rgba(100,100,150,0.3); }
+  .horizontal { width: 100%; height: 1px; top: 50%; transform: translateY(-50%); }
+  .vertical   { width: 1px; height: 100%; left: 50%; transform: translateX(-50%); }
+
+  .effects {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #00dbde;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ====== BOTONES L1/L2/R1/R2 ====== */
+  .shoulder-buttons {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .shoulder-group {
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .shoulder-btn {
+    padding: 10px 24px;
+    background: linear-gradient(145deg, #3a3a5a, #1e1e2e);
+    border: 2px solid #5a5a7a;
+    border-radius: 10px;
+    color: #a0a0c0;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow:
+      0 4px 8px rgba(0,0,0,0.6),
+      inset 0 1px 2px rgba(255,255,255,0.1);
+    transition: all 0.08s ease;
+    cursor: pointer;
+  }
+
+  .shoulder-btn:active,
+  .shoulder-btn.active {
+    background: linear-gradient(145deg, #00dbde, #008cff);
+    color: #fff;
+    box-shadow:
+      0 0 15px rgba(0,219,222,0.8),
+      inset 0 1px 2px rgba(255,255,255,0.3);
+    transform: scale(0.95);
+  }
+
+  /* ====== START / SELECT ====== */
+  .center-buttons {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    z-index: 10;
+  }
+
+  .center-btn {
+    padding: 8px 18px;
+    background: linear-gradient(145deg, #3a3a5a, #1e1e2e);
+    border: 2px solid #5a5a7a;
+    border-radius: 20px;
+    color: #a0a0c0;
+    font-weight: bold;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.08s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+  }
+
+  .center-btn:active,
+  .center-btn.active {
+    background: linear-gradient(145deg, #00dbde, #008cff);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(0,219,222,0.8);
+    transform: scale(0.95);
+  }
+
+  /* ====== HUD LECTURA ====== */
+  .hud {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: #a0a0c0;
+    font-variant-numeric: tabular-nums;
+    z-index: 20;
+    background: rgba(10,10,20,0.7);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(100,100,150,0.3);
+    backdrop-filter: blur(6px);
+  }
+
+  .hud span { color: #70d0ff; font-weight: bold; }
+  .hud .pressed { color: #fc00ff !important; }
+
+  /* ====== Responsive ====== */
+  @media (max-width: 700px) {
+    .dpad { width: 120px; height: 120px; }
+    .dpad-up, .dpad-down { left: 40px; width: 40px; height: 40px; }
+    .dpad-left, .dpad-right { top: 40px; width: 40px; height: 40px; }
+    .dpad-btn { font-size: 1rem; }
+    .action-buttons { width: 160px; height: 160px; }
+    .action-btn { width: 50px; height: 50px; font-size: 1.3rem; }
+    .joystick-container { width: 140px; height: 140px; }
+    .joystick-base { width: 130px; height: 130px; }
+    .joystick-handle { width: 58px; height: 58px; }
+    .shoulder-btn { padding: 8px 14px; font-size: 0.75rem; }
+    .center-btn { padding: 6px 12px; font-size: 0.65rem; }
+    .hud { font-size: 0.65rem; padding: 4px 10px; gap: 10px; }
+  }
+
+  @media (max-width: 480px) {
+    .gamepad { padding: 6px; }
+    .joystick-container { width: 110px; height: 110px; }
+    .joystick-base { width: 100px; height: 100px; }
+    .joystick-handle { width: 46px; height: 46px; }
+    .dpad { width: 100px; height: 100px; }
+    .dpad-up, .dpad-down { left: 33px; width: 34px; height: 34px; }
+    .dpad-left, .dpad-right { top: 33px; width: 34px; height: 34px; }
+    .action-buttons { width: 130px; height: 130px; }
+    .action-btn { width: 40px; height: 40px; font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="gamepad">
+
+  <!-- HUD de lectura -->
+  <div class="hud">
+    <div>L: <span id="hudL">0,0</span></div>
+    <div>R: <span id="hudR">0,0</span></div>
+    <div>Btn: <span id="hudBtn" class="pressed">—</span></div>
+  </div>
+
+  <!-- ====== L1 / L2 / R1 / R2 ====== -->
+  <div class="shoulder-buttons">
+    <div class="shoulder-group">
+      <button class="shoulder-btn" data-btn="L2">L2</button>
+      <button class="shoulder-btn" data-btn="L1">L1</button>
+    </div>
+    <div class="shoulder-group">
+      <button class="shoulder-btn" data-btn="R1">R1</button>
+      <button class="shoulder-btn" data-btn="R2">R2</button>
+    </div>
+  </div>
+
+  <!-- ====== ZONA SUPERIOR IZQUIERDA: D-PAD ====== -->
+  <div class="zone zone-tl">
+    <div class="dpad" id="dpad">
+      <div class="dpad-btn dpad-up"    data-btn="UP">▲</div>
+      <div class="dpad-btn dpad-down"  data-btn="DOWN">▼</div>
+      <div class="dpad-btn dpad-left"  data-btn="LEFT">◀</div>
+      <div class="dpad-btn dpad-right" data-btn="RIGHT">▶</div>
+    </div>
+  </div>
+
+  <!-- ====== ZONA SUPERIOR DERECHA: BOTONES DE ACCIÓN ====== -->
+  <div class="zone zone-tr">
+    <div class="action-buttons">
+      <div class="action-btn btn-triangle" data-btn="TRIANGLE">△</div>
+      <div class="action-btn btn-circle"   data-btn="CIRCLE">○</div>
+      <div class="action-btn btn-cross"    data-btn="CROSS">✕</div>
+      <div class="action-btn btn-square"   data-btn="SQUARE">□</div>
+    </div>
+  </div>
+
+  <!-- ====== ZONA INFERIOR IZQUIERDA: STICK IZQUIERDO ====== -->
+  <div class="zone zone-bl">
+    <div class="joystick-wrapper">
+      <div class="joystick-container" id="leftJoyWrapper">
+        <div class="joystick-base" id="leftJoyBase">
+          <div class="crosshair">
+            <div class="crosshair-line horizontal"></div>
+            <div class="crosshair-line vertical"></div>
+          </div>
+          <div class="joystick-handle" id="leftJoyHandle"></div>
+        </div>
+        <div class="effects" id="leftJoyEffects"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== ZONA INFERIOR DERECHA: STICK DERECHO ====== -->
+  <div class="zone zone-br">
+    <div class="joystick-wrapper">
+      <div class="joystick-container" id="rightJoyWrapper">
+        <div class="joystick-base" id="rightJoyBase">
+          <div class="crosshair">
+            <div class="crosshair-line horizontal"></div>
+            <div class="crosshair-line vertical"></div>
+          </div>
+          <div class="joystick-handle" id="rightJoyHandle"></div>
+        </div>
+        <div class="effects" id="rightJoyEffects"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== START / SELECT ====== -->
+  <div class="center-buttons">
+    <button class="center-btn" data-btn="SELECT">SELECT</button>
+    <button class="center-btn" data-btn="START">START</button>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ============================================================
+  // ESTADO GLOBAL DEL MANDO
+  // ============================================================
+  const state = {
+    leftStick:  { x: 0, y: 0, active: false },
+    rightStick: { x: 0, y: 0, active: false },
+    buttons: {}   // { TRIANGLE: true, CROSS: false, ... }
+  };
+
+  // ============================================================
+  // SISTEMA DE PARTÍCULAS + GLOW (reutilizable)
+  // ============================================================
+  function createParticles(container, nx, ny, intensity, colorHue) {
+    const count = 3;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.classList.add('particle');
+
+      const baseX = 50 + nx * 35;
+      const baseY = 50 + ny * 35;
+      const angle = Math.random() * Math.PI * 2;
+      const dist  = 15 + Math.random() * 20;
+      const px = Math.cos(angle) * dist;
+      const py = Math.sin(angle) * dist;
+
+      p.style.left = `calc(${baseX}% + ${px}px)`;
+      p.style.top  = `calc(${baseY}% + ${py}px)`;
+      p.style.background = `hsl(${colorHue}, 100%, 60%)`;
+
+      container.appendChild(p);
+
+      const anim = p.animate(
+        [
+          { transform: 'scale(0)', opacity: 0.9 },
+          { transform: `scale(1.5) translate(${Math.cos(angle)*25}px, ${Math.sin(angle)*25}px)`, opacity: 0 }
+        ],
+        { duration: 600 + Math.random()*300, easing: 'cubic-bezier(0.215,0.61,0.355,1)' }
+      );
+      anim.onfinish = () => p.remove();
+    }
+  }
+
+  // ============================================================
+  // JOYSTICK REUTILIZABLE (táctil + ratón + multitáctil)
+  // ============================================================
+  function Joystick(opts) {
+    const {
+      handle, base, effects,
+      maxMove = 50,
+      onMove,
+      onEnd,
+      hueBase = 200
+    } = opts;
+
+    let isDragging = false;
+    let pointerId = null;   // para multitáctil
+    let x = 0, y = 0;
+
+    function getPoint(e) {
+      if (e.touches) {
+        // Buscar el touch con el identifier activo
+        for (let i = 0; i < e.touches.length; i++) {
+          if (e.touches[i].identifier === pointerId) {
+            return { x: e.touches[i].clientX, y: e.touches[i].clientY };
+          }
+        }
+        return null;
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function start(e) {
+      if (e.touches) {
+        pointerId = e.touches[0].identifier;
+      }
+      isDragging = true;
+      handle.style.transition = 'none';
+      move(e);
+      e.preventDefault();
+    }
+
+    function move(e) {
+      if (!isDragging) return;
+
+      const pt = getPoint(e);
+      if (!pt) return;
+
+      const baseRect = base.getBoundingClientRect();
+      const cx = baseRect.left + baseRect.width / 2;
+      const cy = baseRect.top + baseRect.height / 2;
+
+      let dx = pt.x - cx;
+      let dy = pt.y - cy;
+
+      const maxDistance = baseRect.width / 2 - handle.offsetWidth / 2;
+      const dist = Math.min(Math.sqrt(dx*dx + dy*dy), maxDistance);
+
+      if (dist > 0) {
+        const angle = Math.atan2(dy, dx);
+        x = (Math.cos(angle) * dist) / maxDistance;
+        y = (Math.sin(angle) * dist) / maxDistance;
+      } else {
+        x = 0; y = 0;
+      }
+
+      update();
+
+      if (onMove) onMove(x, y);
+      e.preventDefault();
+    }
+
+    function end(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      pointerId = null;
+      handle.style.transition = 'transform 0.1s ease';
+
+      x = 0; y = 0;
+      update();
+
+      if (onEnd) onEnd(0, 0);
+    }
+
+    function update() {
+      handle.style.transform = `translate(${x * maxMove}px, ${y * maxMove}px)`;
+
+      const intensity = Math.min(1, Math.sqrt(x*x + y*y));
+      const hue = hueBase + intensity * 100;
+      const glowSize = intensity * 20;
+
+      handle.style.boxShadow =
+        `0 5px 15px rgba(0,0,0,0.5),
+         inset 0 2px 5px rgba(255,255,255,0.1),
+         0 0 ${glowSize}px hsla(${hue},100%,50%,0.6)`;
+
+      // Partículas
+      if (intensity > 0.1 && Math.random() < 0.35) {
+        createParticles(effects, x, y, intensity, hue);
+      }
+    }
+
+    handle.addEventListener('mousedown', start);
+    handle.addEventListener('touchstart', start, { passive: false });
+
+    document.addEventListener('mousemove', move);
+    document.addEventListener('touchmove', move, { passive: false });
+
+    document.addEventListener('mouseup', end);
+    document.addEventListener('touchend', end);
+    document.addEventListener('touchcancel', end);
+
+    return { getX: () => x, getY: () => y, isActive: () => isDragging };
+  }
+
+  // ============================================================
+  // CREAR STICK IZQUIERDO
+  // ============================================================
+  const leftJoy = Joystick({
+    handle:  document.getElementById('leftJoyHandle'),
+    base:    document.getElementById('leftJoyBase'),
+    effects: document.getElementById('leftJoyEffects'),
+    maxMove: 45,
+    hueBase: 200,
+    onMove: (x, y) => {
+      state.leftStick.x = x;
+      state.leftStick.y = y;
+      state.leftStick.active = true;
+      updateHUD();
+    },
+    onEnd: () => {
+      state.leftStick.x = 0;
+      state.leftStick.y = 0;
+      state.leftStick.active = false;
+      updateHUD();
+    }
+  });
+
+  // ============================================================
+  // CREAR STICK DERECHO
+  // ============================================================
+  const rightJoy = Joystick({
+    handle:  document.getElementById('rightJoyHandle'),
+    base:    document.getElementById('rightJoyBase'),
+    effects: document.getElementById('rightJoyEffects'),
+    maxMove: 45,
+    hueBase: 300,
+    onMove: (x, y) => {
+      state.rightStick.x = x;
+      state.rightStick.y = y;
+      state.rightStick.active = true;
+      updateHUD();
+    },
+    onEnd: () => {
+      state.rightStick.x = 0;
+      state.rightStick.y = 0;
+      state.rightStick.active = false;
+      updateHUD();
+    }
+  });
+
+  // ============================================================
+  // BOTONES (D-pad, acción, L1/L2/R1/R2, Start/Select)
+  // ============================================================
+  function bindButton(el) {
+    const btnName = el.dataset.btn;
+    if (!btnName) return;
+
+    function press(e) {
+      el.classList.add('active');
+      state.buttons[btnName] = true;
+      updateHUD();
+      if (navigator.vibrate) navigator.vibrate(8);
+      e.preventDefault();
+    }
+
+    function release(e) {
+      el.classList.remove('active');
+      state.buttons[btnName] = false;
+      updateHUD();
+      if (e) e.preventDefault();
+    }
+
+    el.addEventListener('mousedown', press);
+    el.addEventListener('touchstart', press, { passive: false });
+
+    el.addEventListener('mouseup', release);
+    el.addEventListener('mouseleave', release);
+    el.addEventListener('touchend', release);
+    el.addEventListener('touchcancel', release);
+
+    // Inicializar estado
+    state.buttons[btnName] = false;
+  }
+
+  document.querySelectorAll('[data-btn]').forEach(bindButton);
+
+  // ============================================================
+  // HUD (lectura en pantalla)
+  // ============================================================
+  const hudL   = document.getElementById('hudL');
+  const hudR   = document.getElementById('hudR');
+  const hudBtn = document.getElementById('hudBtn');
+
+  function updateHUD() {
+    hudL.textContent = `${state.leftStick.x.toFixed(2)}, ${state.leftStick.y.toFixed(2)}`;
+    hudR.textContent = `${state.rightStick.x.toFixed(2)}, ${state.rightStick.y.toFixed(2)}`;
+
+    const pressed = Object.keys(state.buttons).filter(k => state.buttons[k]);
+    hudBtn.textContent = pressed.length ? pressed.join('+') : '—';
+  }
+
+  // ============================================================
+  // API PÚBLICA PARA TU JUEGO
+  // ============================================================
+  window.gamepad = {
+    getLeftStick:  () => ({ ...state.leftStick }),
+    getRightStick: () => ({ ...state.rightStick }),
+    isPressed:     (btn) => !!state.buttons[btn],
+    getButtons:    () => ({ ...state.buttons }),
+    getAll:        () => JSON.parse(JSON.stringify(state))
+  };
+
+  // ============================================================
+  // LOOP DE EJEMPLO (opcional, para que veas cómo integrarlo)
+  // ============================================================
+  // function gameLoop() {
+  //   const L = gamepad.getLeftStick();
+  //   const R = gamepad.getRightStick();
+  //   moverJugador(L.x, L.y);
+  //   rotarCamara(R.x, R.y);
+  //   if (gamepad.isPressed('CROSS')) saltar();
+  //   if (gamepad.isPressed('TRIANGLE')) accion();
+  //   requestAnimationFrame(gameLoop);
+  // }
+  // gameLoop();
+
+  updateHUD();
+})();
+</script>
+</body>
+</html>
