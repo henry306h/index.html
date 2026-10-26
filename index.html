@@ -764,6 +764,43 @@
 
   updateHUD();
 })();
+
+
+ // ============================================================
+// CONEXIÓN CON LA TABLET (WebRTC vía BandiJoystick/Trystero)
+// ============================================================
+// Cargamos BandiJoystick desde CDN (asegúrate de tener internet en el móvil)
+const script = document.createElement('script');
+script.src = 'https://cdn.jsdelivr.net/npm/bandijoystick@0.1.2/dist/bandijoystick.min.js';
+script.onload = () => {
+  // appId: debe coincidir con el de la tablet
+  const bandi = new BandiJoystick('henry-gamer-arcade');
+
+  // Leer el ID de sala de la URL (ej: ?room=ABC123)
+  const params = new URLSearchParams(window.location.search);
+  const roomId = params.get('room') || 'default';
+
+  // Unirse a la sala como "mando"
+  bandi.join(roomId).then(() => {
+    console.log('✅ Móvil conectado a la sala:', roomId);
+    document.body.style.borderTop = '4px solid #33ff88'; // Feedback visual
+
+    // Enviar el estado del joystick 60 veces por segundo
+    setInterval(() => {
+      if (!window.gamepad) return;
+      const data = {
+        left: window.gamepad.getLeftStick(),
+        right: window.gamepad.getRightStick(),
+        buttons: window.gamepad.getButtons()
+      };
+      bandi.send(data);
+    }, 16); // ~60fps
+  }).catch(err => {
+    console.error('❌ Error al conectar:', err);
+    document.body.style.borderTop = '4px solid #ff4444';
+  });
+};
+document.head.appendChild(script);
 </script>
 </body>
 </html>
